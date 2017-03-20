@@ -1,0 +1,35 @@
+var roleHarvester = {
+
+    /** @param {Creep} creep **/
+    run: function(creep) {
+        if(creep.memory.currentsource === undefined) creep.memory.currentsource = 0;
+        if(creep.memory.wait === undefined) creep.memory.wait = 0;
+        if(creep.carry.energy < creep.carryCapacity) {
+            var sources = creep.room.find(FIND_SOURCES);
+        if(creep.memory.wait > 8) creep.memory.currentsource = 1;
+        if(creep.harvest(sources[creep.memory.currentsource]) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(sources[creep.memory.currentsource], {visualizePathStyle: {stroke: '#ffaa00'}});
+            var creepdistance = creep.pos.getRangeTo(sources[creep.memory.currentsource]);
+        if(creepdistance <= 3 && creepdistance > 1) creep.memory.wait++;
+        if(creepdistance <= 1) creep.memory.wait = 0;
+            }
+        }
+        else {
+            creep.memory.wait = 0;
+            creep.memory.currentsource = 0;
+            var targets = creep.room.find(FIND_STRUCTURES, {
+                    filter: (structure) => {
+                        return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN) &&
+                            structure.energy < structure.energyCapacity;
+                    }
+            });
+            if(targets.length > 0) {
+                if(creep.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
+                }
+            }
+        }
+	}
+};
+
+module.exports = roleHarvester;
