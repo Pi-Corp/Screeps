@@ -24,7 +24,7 @@ module.exports.loop = function () {
         }
     }
     if(upgraders.length < 3  && !_.isString(newName)) {
-        newName = Game.spawns['HQ'].createCreep([WORK,CARRY,CARRY,MOVE], {role: 'upgrader'});
+        newName = Game.spawns['HQ'].createCreep([WORK,WORK,WORK,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE], {role: 'upgrader'});
         if(_.isString(newName)) {
         console.log('New Upgrader: ' + newName);
         }
