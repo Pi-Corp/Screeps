@@ -23,7 +23,7 @@ module.exports.loop = function () {
             console.log('New Harvester: ' + newName);
         }
     }
-    if(upgraders.length < 2  && !_.isString(newName)) {
+    if(upgraders.length < 3  && !_.isString(newName)) {
         newName = Game.spawns['HQ'].createCreep([WORK,CARRY,CARRY,MOVE], {role: 'upgrader'});
         if(_.isString(newName)) {
         console.log('New Upgrader: ' + newName);
