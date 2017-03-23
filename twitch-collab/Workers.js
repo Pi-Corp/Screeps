@@ -17,17 +17,17 @@ var roleHarvester = {
             */ 
             // waiting too long, change source
             if(creep.memory.wait > 8 || creep.memory.currentsource === undefined) {
-                var sources = creep.pos.findClosestByRange(FIND_SOURCES);
-                for (var source of sources) {
+                var sources = creep.room.find(FIND_SOURCES);
+                _.forIn(sources, function(source) {
                     if (creep.memory.currentsource != source.id) {
                         creep.memory.currentsource = source.id;
                         creep.memory.wait = 0;
                     }
-                }
+                });
             }
 
             // harvest energy
-            var source = Game.getObjectById(creep.memory.source);
+            var source = Game.getObjectById(creep.memory.currentsource);
             if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
                 // out of range, try to move closer and keep track of time waiting
                 creep.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
@@ -48,7 +48,7 @@ var roleHarvester = {
             //Prioritized energy dropoff
             
             // primary targets: the extensions and spawns
-            var targets = creep.room.find(FIND_STRUCTURES, {
+            var targets = creep.room.find(FIND_MY_STRUCTURES, {
                 filter: (structure) => {
                 return (structure.structureType == STRUCTURE_EXTENSION
                     || structure.structureType == STRUCTURE_SPAWN)
