@@ -12,25 +12,25 @@ module.exports.loop = function () {
     var newName;
     
     if(defenders.length < 1) {
-        newName = Game.spawns['HQ'].createCreep([TOUGH,TOUGH,RANGED_ATTACK,ATTACK,HEAL,MOVE], {role: 'defender'});
+        newName = Game.spawns['Spawn1'].createCreep([TOUGH,TOUGH,RANGED_ATTACK,ATTACK,HEAL,MOVE], {role: 'defender'});
         if(_.isString(newName)) {
             console.log('New Defender: ' + newName);
         }
     }
     if(harvesters.length < 2 && !_.isString(newName)) {
-        newName = Game.spawns['HQ'].createCreep([WORK,CARRY,CARRY,MOVE], {role: 'harvester'});
+        newName = Game.spawns['Spawn1'].createCreep([WORK,CARRY,CARRY,MOVE], {role: 'harvester'});
         if(_.isString(newName)) {
             console.log('New Harvester: ' + newName);
         }
     }
     if(upgraders.length < 2  && !_.isString(newName)) {
-        newName = Game.spawns['HQ'].createCreep([WORK,CARRY,CARRY,MOVE], {role: 'upgrader'});
+        newName = Game.spawns['Spawn1'].createCreep([WORK,CARRY,CARRY,MOVE], {role: 'upgrader'});
         if(_.isString(newName)) {
         console.log('New Upgrader: ' + newName);
         }
     }
     if(builders.length < 1 && !_.isString(newName)) {
-        newName = Game.spawns['HQ'].createCreep([WORK,WORK,CARRY,MOVE], {role: 'builder'});
+        newName = Game.spawns['Spawn1'].createCreep([WORK,WORK,CARRY,MOVE], {role: 'builder'});
         if(_.isString(newName)) {
         console.log('New Builder: ' + newName);
         }
