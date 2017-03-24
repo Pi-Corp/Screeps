@@ -12,11 +12,24 @@ module.exports = {
             }
             
             var haulers = _.filter(Game.creeps, (creep) => creep.memory.role == 'hauler');
-            var droppedE = creep.room.find(FIND_DROPPED_ENERGY);
+            var droppedSources = creep.room.find(FIND_DROPPED_ENERGY);
         
-            if(haulers.length > 0 && haulers.length == droppedE.length) {
-                for(var h = 0; h < haulers.length; h++) {
-                    haulers[h].memory.currentsource = droppedE[h].id;
+            if(haulers.length > 0) {
+                
+                if(creep.memory.currentsource === undefined) {
+                    var min = 100;
+                    var leastOccupiedSource;
+                    
+                    _.forIn(droppedSources, function(source) {
+                        var haulersAtSource = _.filter(Game.creeps, (h) => h.memory.role == 'hauler' && h.memory.currentsource == source.id);
+                        if(haulersAtSource.length < min) {
+                            min = haulersAtSource.length;
+                            leastOccupiedSource = source.id;
+                        }
+                    });
+                    
+                    console.log('Assigning hauler to source: ' + leastOccupiedSource);
+                    creep.memory.currentsource = leastOccupiedSource;
                 }
             }
 
@@ -32,7 +45,7 @@ module.exports = {
                 creep.memory.hauling = false;
                 return;
             }
-            
+
             //Prioritized energy dropoff
             
             // primary targets: extensions - usually close to sources
@@ -80,11 +93,24 @@ module.exports = {
                     }
                 });
             }
-            // found nothing that needs energy -- shouldn't happen but just in case
+            // found nothing that needs energy -- not enough storage, not spawning enough
             if(!target) {
                 creep.say('no dest')
-                //console.log('error: no energy dest');
+                creep.memory.hauling = false;
                 return;
+            }
+            
+            // if target is further away than dropped energy source, refill first
+            if(creep.carry.energy < creep.carryCapacity) {
+                var droppedSource = Game.getObjectById(creep.memory.currentsource);
+                var sourceDistance = creep.pos.getRangeTo(droppedSource);
+                var targetDistance = creep.pos.getRangeTo(target);
+                
+                if(targetDistance >= sourceDistance) {
+                    creep.say('refill');
+                    creep.memory.hauling = false;
+                    return;
+                }
             }
             
             // drop off energy

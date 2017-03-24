@@ -3,13 +3,28 @@ module.exports = {
     /** @param {Creep} creep **/
     run: function(creep) {
         
+        if(creep.memory.wait === undefined) { creep.memory.wait = 0; }
+        if(creep.memory.harvesting === undefined) { creep.memory.harvesting = true; }
+        
         var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == 'harvester');
         var haulers = _.filter(Game.creeps, (creep) => creep.memory.role == 'hauler');
         var sources = creep.room.find(FIND_SOURCES);
         
-        if(harvesters.length == sources.length || haulers.length > 0) {
-            for(var h = 0; h < harvesters.length; h++) {
-                harvesters[h].memory.currentsource = sources[h].id;
+        if(haulers.length > 0) {
+            if(creep.memory.currentsource === undefined) {
+                var min = 100;
+                var leastOccupiedSource;
+                
+                _.forIn(sources, function(source) {
+                    var harvestersAtSource = _.filter(Game.creeps, (h) => h.memory.role == 'harvester' && h.memory.currentsource == source.id);
+                    if(harvestersAtSource.length < min) {
+                        min = harvestersAtSource.length;
+                        leastOccupiedSource = source.id;
+                    }
+                });
+                
+                console.log('Assigning harvester to source: ' + leastOccupiedSource);
+                creep.memory.currentsource = leastOccupiedSource;
             }
             
             var source = Game.getObjectById(creep.memory.currentsource);
@@ -26,10 +41,6 @@ module.exports = {
             
             return;
         }
-        
-        
-        if(creep.memory.wait === undefined) { creep.memory.wait = 0; }
-        if(creep.memory.harvesting === undefined) { creep.memory.harvesting = true; }
         
         if(creep.memory.harvesting) {
             if(creep.carry.energy == creep.carryCapacity) {
