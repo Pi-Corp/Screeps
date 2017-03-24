@@ -2,8 +2,7 @@ module.exports = {
 
     /** @param {Creep} creep **/
     run: function(creep) {
-        
-        if(creep.memory.wait === undefined) { creep.memory.wait = 0; }
+
         if(creep.memory.harvesting === undefined) { creep.memory.harvesting = true; }
         
         var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == 'harvester');
@@ -41,6 +40,10 @@ module.exports = {
             
             return;
         }
+        
+        // below code only used when there are no haulers
+        
+        if(creep.memory.wait === undefined) { creep.memory.wait = 0; }
         
         if(creep.memory.harvesting) {
             if(creep.carry.energy == creep.carryCapacity) {
