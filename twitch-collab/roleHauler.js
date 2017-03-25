@@ -33,7 +33,7 @@ module.exports = {
             //var target = creep.pos.findClosestByRange(FIND_DROPPED_ENERGY);
             var target = Game.getObjectById(creep.memory.currentsource);
             if(target == null) {
-                creep.memory.currentsource === undefined
+                creep.memory.currentsource = undefined;
             }
             if(creep.pickup(target) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(target, {visualizePathStyle: {stroke: '#ffffff'}});
