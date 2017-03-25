@@ -13,32 +13,30 @@ module.exports = {
             
             var haulers = _.filter(Game.creeps, (creep) => creep.memory.role == 'hauler');
             var droppedSources = creep.room.find(FIND_DROPPED_ENERGY);
-        
-            if(haulers.length > 0) {
                 
-                if(creep.memory.currentsource === undefined) {
-                    var min = 100;
-                    var leastOccupiedSource;
-                    
-                    _.forIn(droppedSources, function(source) {
-                        var haulersAtSource = _.filter(Game.creeps, (h) => h.memory.role == 'hauler' && h.memory.currentsource == source.id);
-                        if(haulersAtSource.length < min) {
-                            min = haulersAtSource.length;
-                            leastOccupiedSource = source.id;
-                        }
-                    });
-                    
-                    console.log('Assigning hauler to source: ' + leastOccupiedSource);
-                    creep.memory.currentsource = leastOccupiedSource;
-                }
+            if(creep.memory.currentsource === undefined) {
+                var min = 100;
+                var leastOccupiedSource;
+                
+                _.forIn(droppedSources, function(source) {
+                    var haulersAtSource = _.filter(Game.creeps, (h) => h.memory.role == 'hauler' && h.memory.currentsource == source.id);
+                    if(haulersAtSource.length < min) {
+                        min = haulersAtSource.length;
+                        leastOccupiedSource = source.id;
+                    }
+                });
+                
+                //console.log('Assigning hauler to source: ' + leastOccupiedSource);
+                creep.memory.currentsource = leastOccupiedSource;
             }
 
             //var target = creep.pos.findClosestByRange(FIND_DROPPED_ENERGY);
             var target = Game.getObjectById(creep.memory.currentsource);
-            if(target) {
-                if(creep.pickup(target) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(target, {visualizePathStyle: {stroke: '#ffffff'}});
-                }
+            if(target == null) {
+                creep.memory.currentsource === undefined
+            }
+            if(creep.pickup(target) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(target, {visualizePathStyle: {stroke: '#ffffff'}});
             }
         } else {
             if(creep.carry.energy === 0) {
@@ -48,49 +46,65 @@ module.exports = {
 
             //Prioritized energy dropoff
             
-            // primary targets: extensions - usually close to sources
+            // primary target: extensions - usually close to sources
             var target = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-                filter: (s) => {
-                return s.structureType == STRUCTURE_EXTENSION
-                    && s.energy < s.energyCapacity;
-                }
+                filter: (s) => (s.structureType == STRUCTURE_EXTENSION
+                    || s.structureType == STRUCTURE_SPAWN)
+                    && s.energy < s.energyCapacity
             });
-            //if(!targets.length) {
+            /*
             if(!target) {
-                // targets : spawn
+                // target: spawn
                 target = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-                filter: (s) => {
-                return s.structureType == STRUCTURE_SPAWN
-                    && s.energy < s.energyCapacity;
-                }
+                filter: (s) => s.structureType == STRUCTURE_SPAWN
+                    && s.energy < s.energyCapacity
             });
             }
+            */
             if(!target) {
-                // targets : towers with less than 80% of energy
+                // target : towers with less than 80% of energy
                 target = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, { 
-                    filter: (s) => {
-                    return (s.structureType == STRUCTURE_TOWER) 
-                        && s.energy < (s.energyCapacity * 0.8);
-                    }
+                    filter: (s) => s.structureType == STRUCTURE_TOWER
+                        && s.energy < (s.energyCapacity * 0.8)
                 });
             }
             if(!target) {
-                // targets: container, link and storage
-                target = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-                    filter: (s) => {
-                	return ((s.structureType == STRUCTURE_CONTAINER) 
-                    	|| (s.structureType == STRUCTURE_STORAGE))
-                    	&& s.energy < s.energyCapacity;
-                    }
+                // target: container, link and storage
+                target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
+                    filter: (s) => s.structureType == STRUCTURE_CONTAINER
+                    	&& _.sum(s.store) < s.storeCapacity
+                });
+            }
+            /*
+            if(!target) {
+                // target: container, link and storage
+                target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
+                    filter: (s) => s.structureType == STRUCTURE_STORAGE)
+                    	&& _.sum(s.store) < s.storeCapacity
+                });
+            }
+            */
+            if(!target) {
+                // target: builder
+                //var upgraders = _.filter(Game.creeps, (creep) => creep.memory.role == 'upgrader');
+                target = creep.pos.findClosestByPath(FIND_MY_CREEPS, {
+                    filter: (c) => c.memory.role == 'builder'
+                    	&& c.carry.energy < c.carryCapacity
                 });
             }
             if(!target) {
-                // targets : towers with less than 100% of energy
+                // target: upgrader
+                //var upgraders = _.filter(Game.creeps, (creep) => creep.memory.role == 'upgrader');
+                target = creep.pos.findClosestByPath(FIND_MY_CREEPS, {
+                    filter: (c) => c.memory.role == 'upgrader'
+                    	&& c.carry.energy < c.carryCapacity
+                });
+            }
+            if(!target) {
+                // target: towers with less than 100% of energy
                 target = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-                    filter: (s) => {
-                	return (s.structureType == STRUCTURE_TOWER) 
-                	    && s.energy < s.energyCapacity;
-                    }
+                    filter: (s) => s.structureType == STRUCTURE_TOWER
+                	    && s.energy < s.energyCapacity
                 });
             }
             // found nothing that needs energy -- not enough storage, not spawning enough
@@ -114,9 +128,12 @@ module.exports = {
             }
             
             // drop off energy
+            //console.log('dropoff target: ' + target)
             if(creep.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(target, {visualizePathStyle: {stroke: '#ffffff'}});
                 //console.log('harvester target: ' + targets[0]);
+            } else {
+                //console.log('dropoff error: ' + creep.transfer(target, RESOURCE_ENERGY))
             }
         }
 	}
