@@ -4,6 +4,10 @@ module.exports = {
 
     /** @param {Creep} creep **/
     run: function(creep) {
+        
+        if(creep.memory.building === undefined) {
+            creep.memory.building = false;
+        }
 
         if(creep.memory.building) {
             // harvest if out of energy
@@ -29,31 +33,31 @@ module.exports = {
             
             // find closest constructionSite
             var constructionSite;
-            if (creep.memory.myConstructionSite == undefined) {
+            if (creep.memory.constructionSite == undefined) {
                 constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_SPAWN});
-                if (constructionSite == null) {
+                if (!constructionSite) {
                     constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_EXTENSION});
                 }
-                if (constructionSite == null) {
+                if (!constructionSite) {
                     constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_RAMPART});
                 }
-                if (constructionSite == null) {
+                if (!constructionSite) {
                     constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_CONTAINER});
                 }
-                if (constructionSite == null) {
+                if (!constructionSite) {
                     constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES);
                 }
-                if (constructionSite != null && constructionSite != undefined) {
-                    creep.memory.myConstructionSite = constructionSite.id;
+                if (constructionSite) {
+                    creep.memory.constructionSite = constructionSite.id;
                 }
             } else {
-                constructionSite = Game.getObjectById(creep.memory.myConstructionSite);
+                constructionSite = Game.getObjectById(creep.memory.constructionSite);
                 if (constructionSite == null) {
-                    delete creep.memory.myConstructionSite;
+                    creep.memory.constructionSite = undefined;
                 }
             }
             // if one is found
-            if (constructionSite != undefined) {
+            if (constructionSite) {
                 // try to build if the constructionSite is in range
                 if (creep.build(constructionSite) == ERR_NOT_IN_RANGE) {
                     // move towards the constructionSite
@@ -71,14 +75,36 @@ module.exports = {
             // build if full of energy
     	    if(creep.carry.energy == creep.carryCapacity) {
     	        creep.memory.building = true;
+    	        creep.memory.source = undefined;
     	        creep.say('build');
     	        return;
     	    }
-
-            // TODO: save to memory, prioritize collecting from container before source
-	        var source = creep.pos.findClosestByRange(FIND_SOURCES);
-            if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
+            
+            var source;
+            var sourceType = 'dropped';
+            if(creep.memory.source == undefined) {
+                source = creep.pos.findClosestByRange(FIND_DROPPED_ENERGY);
+                if (!source) {
+    	            source = creep.pos.findClosestByRange(FIND_SOURCES);
+    	            sourceType = '';
+                }
+                if(source) {
+                    creep.memory.source = source.id;
+                }
+            } else {
+                source = Game.getObjectById(creep.memory.source);
+            }
+            if(source == null) {
+                creep.memory.source = undefined;
+            }
+            if(sourceType == 'dropped') {
+                if(creep.pickup(source) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
+                }
+            } else {
+                if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
+                }
             }
 	    }
 	}
