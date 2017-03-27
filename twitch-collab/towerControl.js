@@ -1,9 +1,7 @@
 module.exports = {
     run: function(roomName) {
         var towers = Game.rooms[roomName].find(FIND_STRUCTURES, {
-            filter: (structure) => {
-                return (structure.structureType == STRUCTURE_TOWER);
-            }
+            filter: (s) => s.structureType == STRUCTURE_TOWER
         })
         //console.log('#towers: ' + towers.length);
         
@@ -15,7 +13,7 @@ module.exports = {
           var tower = towers[i]
     
           if(tower){
-            runTower(tower);
+            this.runTower(tower);
           }
         }
     },
@@ -24,24 +22,16 @@ module.exports = {
         var closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS)
         if(closestHostile){
           tower.attack(closestHostile);
-        } else {
-          var repairTargets = tower.pos.findInRange(FIND_STRUCTURES, 40, {
-            filter: function(structure){
-              if(structure.structureType == STRUCTURE_WALL || structure.structureType == STRUCTURE_RAMPART){
-                return (structure.hits < 100000);
-              }else{
-                return (structure.hits < structure.hitsMax);
-              }
-            }
-          })
-    
-          if(repairTargets.length){
-            repairTargets.sort(function(a, b){
-              return a.hits - b.hits;
+        } else if(tower.energy / tower.energyCapacity >= 0.9) {
+            var repairTarget = tower.pos.findClosestByRange(FIND_STRUCTURES, {
+                filter: (s) => ((s.structureType == STRUCTURE_WALL || s.structureType == STRUCTURE_RAMPART)
+                && s.hits < 100000) || (s.structureType == STRUCTURE_ROAD && (s.hits / s.hitsMax) < 0.5)
             })
     
-            tower.repair(repairTargets[0]);
-          }
+            if(repairTarget){
+                //console.log(repairTarget);
+                tower.repair(repairTarget);
+            }
         }
     }
 };
