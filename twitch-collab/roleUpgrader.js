@@ -7,11 +7,16 @@ module.exports = {
         }
         
 	    if(creep.memory.upgrading) {
-	        if(creep.carry.energy == 0) {
+	        var delivering = _.filter(Game.creeps, (c) => c.memory.role == 'hauler'
+                            && c.memory.target == creep.id
+            );
+            // get energy if empty and nobody is bringing energy
+	        if(creep.carry.energy == 0 && delivering.length == 0) {
 	            creep.memory.upgrading = false;
-	            creep.say('harvest')
+	            //creep.say('collect')
 	            return;
-}
+            }
+            
 	        if(creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(creep.room.controller, {visualizePathStyle: {stroke: '#ffaa00'}});
             }
@@ -19,18 +24,24 @@ module.exports = {
             if(creep.carry.energy == creep.carryCapacity) {
                 creep.memory.upgrading = true;
                 creep.memory.source = undefined;
-                creep.say('upgrade')
+                //creep.say('upgrade')
                 return;
             }
             
-            
             var source;
-            var sourceType = 'dropped';
             if(creep.memory.source == undefined) {
-                source = creep.pos.findClosestByRange(FIND_DROPPED_ENERGY);
-                if (!source) {
+                container = creep.pos.findClosestByRange(FIND_STRUCTURES, {
+                    filter: (s) => s.structureType == STRUCTURE_CONTAINER
+                });
+                var distanceContainer = creep.pos.getRangeTo(container);
+                if(distanceContainer < 10) {
+                    source = container;
+                }
+                if(!source) {
+                    source = creep.pos.findClosestByRange(FIND_DROPPED_ENERGY);
+                }
+                if(!source) {
     	            source = creep.pos.findClosestByRange(FIND_SOURCES);
-    	            sourceType = '';
                 }
                 if(source) {
                     creep.memory.source = source.id;
@@ -38,17 +49,17 @@ module.exports = {
             } else {
                 source = Game.getObjectById(creep.memory.source);
             }
-            if(source == null) {
+            if(source == null || (source.structureType == 'container' && _.sum(source.store) == 0)) {
                 creep.memory.source = undefined;
-            }
-            if(sourceType == 'dropped') {
-                if(creep.pickup(source) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
-                }
             } else {
-                if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
-                }
+                creep.memory.source = source.id;
+            }
+            if(creep.withdraw(source, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
+            } else if(creep.pickup(source) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
+            } else if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
             }
         }
     }

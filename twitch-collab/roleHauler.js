@@ -47,38 +47,29 @@ module.exports = {
             //Prioritized energy dropoff
             
             // primary target: extensions - usually close to sources
-            var target = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+            var target = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {
                 filter: (s) => (s.structureType == STRUCTURE_EXTENSION
                     || s.structureType == STRUCTURE_SPAWN)
                     && s.energy < s.energyCapacity
             });
-            /*
             if(!target) {
-                // target: spawn
-                target = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-                filter: (s) => s.structureType == STRUCTURE_SPAWN
-                    && s.energy < s.energyCapacity
-            });
-            }
-            */
-            if(!target) {
-                // target : towers with less than 80% of energy
-                target = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, { 
+                // target : towers with less than 90% of energy
+                target = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, { 
                     filter: (s) => s.structureType == STRUCTURE_TOWER
-                        && s.energy < (s.energyCapacity * 0.8)
+                        && s.energy / s.energyCapacity < 0.9
                 });
             }
             if(!target) {
                 // target: container, link and storage
-                target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
+                target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
                     filter: (s) => s.structureType == STRUCTURE_CONTAINER
                     	&& _.sum(s.store) < s.storeCapacity
                 });
             }
             /*
             if(!target) {
-                // target: container, link and storage
-                target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
+                // target: storage
+                target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
                     filter: (s) => s.structureType == STRUCTURE_STORAGE)
                     	&& _.sum(s.store) < s.storeCapacity
                 });
@@ -87,7 +78,7 @@ module.exports = {
             if(!target) {
                 // target: builder
                 //var upgraders = _.filter(Game.creeps, (creep) => creep.memory.role == 'upgrader');
-                target = creep.pos.findClosestByPath(FIND_MY_CREEPS, {
+                target = creep.pos.findClosestByRange(FIND_MY_CREEPS, {
                     filter: (c) => c.memory.role == 'builder'
                     	&& c.carry.energy < c.carryCapacity
                 });
@@ -95,21 +86,21 @@ module.exports = {
             if(!target) {
                 // target: upgrader
                 //var upgraders = _.filter(Game.creeps, (creep) => creep.memory.role == 'upgrader');
-                target = creep.pos.findClosestByPath(FIND_MY_CREEPS, {
+                target = creep.pos.findClosestByRange(FIND_MY_CREEPS, {
                     filter: (c) => c.memory.role == 'upgrader'
                     	&& c.carry.energy < c.carryCapacity
                 });
             }
             if(!target) {
                 // target: towers with less than 100% of energy
-                target = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+                target = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {
                     filter: (s) => s.structureType == STRUCTURE_TOWER
                 	    && s.energy < s.energyCapacity
                 });
             }
             // found nothing that needs energy -- not enough storage, not spawning enough
             if(!target) {
-                creep.say('no dest')
+                creep.say('!target')
                 creep.memory.hauling = false;
                 return;
             }
@@ -126,6 +117,8 @@ module.exports = {
                     return;
                 }
             }
+            
+            creep.memory.target = target.id;
             
             // drop off energy
             //console.log('dropoff target: ' + target)

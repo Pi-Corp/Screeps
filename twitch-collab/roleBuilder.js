@@ -10,19 +10,30 @@ module.exports = {
         }
 
         if(creep.memory.building) {
-            // harvest if out of energy
-            if(creep.carry.energy == 0) {
+            var delivering = _.filter(Game.creeps, (c) => c.memory.role == 'hauler'
+                            && c.memory.target == creep.id
+            );
+            // get energy if empty and nobody is bringing energy
+            if(creep.carry.energy == 0 && delivering.length == 0) {
                 creep.memory.building = false;
-                creep.say('harvest');
+                //creep.say('refill');
                 return;
-	        }    
-	        
-	        // build up walls and ramparts if necessary
+	        }
+                
+            // repair walls and ramparts if necessary
             var repairTargets = creep.room.find(FIND_STRUCTURES, {
                 filter: (s) => (s.structureType == STRUCTURE_WALL 
                         || s.structureType == STRUCTURE_RAMPART)
                         && s.hits < 10000
             });
+            // repair roads
+            if(repairTargets.length == 0) {
+                repairTargets = creep.room.find(FIND_STRUCTURES, {
+                    filter: (s) => s.structureType == STRUCTURE_ROAD
+                        && s.hits / s.hitsMax < 0.50
+                });
+            }
+
             if(repairTargets.length > 0) {
     	        if (creep.repair(repairTargets[0]) == ERR_NOT_IN_RANGE) {
                     // move towards the constructionSite
@@ -34,18 +45,21 @@ module.exports = {
             // find closest constructionSite
             var constructionSite;
             if (creep.memory.constructionSite == undefined) {
-                constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_SPAWN});
+                constructionSite = creep.pos.findClosestByRange(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_SPAWN});
                 if (!constructionSite) {
-                    constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_EXTENSION});
+                    constructionSite = creep.pos.findClosestByRange(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_EXTENSION});
                 }
                 if (!constructionSite) {
-                    constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_RAMPART});
+                    constructionSite = creep.pos.findClosestByRange(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_RAMPART});
                 }
                 if (!constructionSite) {
-                    constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_CONTAINER});
+                    constructionSite = creep.pos.findClosestByRange(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_WALL});
                 }
                 if (!constructionSite) {
-                    constructionSite = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES);
+                    constructionSite = creep.pos.findClosestByRange(FIND_MY_CONSTRUCTION_SITES, {filter: (s) => s.structureType == STRUCTURE_CONTAINER});
+                }
+                if (!constructionSite) {
+                    constructionSite = creep.pos.findClosestByRange(FIND_MY_CONSTRUCTION_SITES);
                 }
                 if (constructionSite) {
                     creep.memory.constructionSite = constructionSite.id;
@@ -75,36 +89,29 @@ module.exports = {
             // build if full of energy
     	    if(creep.carry.energy == creep.carryCapacity) {
     	        creep.memory.building = true;
+    	        creep.memory.upgrading = undefined;
     	        creep.memory.source = undefined;
-    	        creep.say('build');
+    	        //creep.say('build');
     	        return;
     	    }
             
-            var source;
-            var sourceType = 'dropped';
-            if(creep.memory.source == undefined) {
-                source = creep.pos.findClosestByRange(FIND_DROPPED_ENERGY);
-                if (!source) {
-    	            source = creep.pos.findClosestByRange(FIND_SOURCES);
-    	            sourceType = '';
-                }
-                if(source) {
-                    creep.memory.source = source.id;
-                }
-            } else {
-                source = Game.getObjectById(creep.memory.source);
+            var source = creep.pos.findClosestByRange(FIND_DROPPED_ENERGY);
+            if(!source) {
+                source = creep.pos.findClosestByRange(FIND_STRUCTURES, {
+                    filter: (s) => s.structureType == STRUCTURE_CONTAINER
+                        && _.sum(s.store) > 0
+                });
             }
-            if(source == null) {
-                creep.memory.source = undefined;
+            if(!source) {
+	            source = creep.pos.findClosestByRange(FIND_SOURCES);
             }
-            if(sourceType == 'dropped') {
-                if(creep.pickup(source) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
-                }
-            } else {
-                if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
-                }
+            if(source == null) { return; }
+            if(creep.withdraw(source, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
+            } else if(creep.pickup(source) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
+            } else if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(source, {visualizePathStyle: {stroke: '#ffffff'}});
             }
 	    }
 	}

@@ -5,11 +5,14 @@ module.exports = {
 
         if(creep.memory.harvesting === undefined) { creep.memory.harvesting = true; }
         
-        var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == 'harvester');
-        var haulers = _.filter(Game.creeps, (creep) => creep.memory.role == 'hauler');
+        var harvesters = _.filter(Game.creeps, (c) => c.memory.role == 'harvester');
+        var haulers = _.filter(Game.creeps, (c) => c.memory.role == 'hauler');
         var sources = creep.room.find(FIND_SOURCES);
         
         if(haulers.length > 0) {
+            creep.memory.harvesting = true;
+            creep.memory.wait = undefined;
+            
             if(creep.memory.currentsource === undefined) {
                 var min = 100;
                 var leastOccupiedSource;
@@ -27,10 +30,20 @@ module.exports = {
             }
             
             var source = Game.getObjectById(creep.memory.currentsource);
-            var creepdistance = creep.pos.getRangeTo(source);
             
-            if(creep.carry.energy == creep.carryCapacity && creepdistance == 1) {
-                creep.drop(RESOURCE_ENERGY);
+            if(creep.carry.energy == creep.carryCapacity) {
+                var distanceSource = creep.pos.getRangeTo(source);
+                var container = creep.pos.findClosestByRange(FIND_STRUCTURES, {
+                    filter: (s) => s.structureType == STRUCTURE_CONTAINER
+                    	&& _.sum(s.store) < s.storeCapacity
+                });
+                var distanceContainer = creep.pos.getRangeTo(container);
+                
+                if(distanceSource == 1 && distanceContainer == 1) {
+                    creep.transfer(container, RESOURCE_ENERGY);
+                } else {
+                    creep.drop(RESOURCE_ENERGY);
+                }
             }
         
             if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
